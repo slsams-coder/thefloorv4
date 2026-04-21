@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE FLOOR | HKTAYY3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; margin: 0; overflow: hidden; }
+        .floor-cell { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glow-pulse { animation: pulse-glow 2s infinite; }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: inset 0 0 20px rgba(251, 191, 36, 0.3); }
+            50% { box-shadow: inset 0 0 40px rgba(251, 191, 36, 0.6); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useLayoutEffect, useMemo, useRef } = React;
+
+        // --- ICONS (Inline SVGs to prevent GitHub loading errors) ---
+        const SwordIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline><line x1="13" y1="19" x2="19" y2="13"></line><line x1="16" y1="16" x2="20" y2="20"></line><line x1="19" y1="21" x2="20" y2="20"></line><line x1="14.5" y1="17.5" x2="15" y2="18"></line></svg>;
+        const TrophyIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>;
+
+        const GRID_COLS = 5;
+        const GRID_ROWS = 4;
+
+        const AutoScaledText = ({ text, containerWidth, containerHeight }) => {
+            const [fontSize, setFontSize] = useState(12);
+            useLayoutEffect(() => {
+                if (!text || containerWidth <= 0) return;
+                const bestSize = Math.min(containerWidth / (text.length * 0.5), containerHeight * 0.4, 40);
+                setFontSize(bestSize);
+            }, [text, containerWidth, containerHeight]);
+
+            return (
+                <div className="flex items-center justify-center text-center p-1 leading-[0.85] font-black uppercase tracking-tighter w-full h-full"
+                     style={{ fontSize: `${fontSize}px`, textShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                    {text}
+                </div>
+            );
+        };
+
+        function App() {
+            const [gameState, setGameState] = useState('setup');
+            const [cells, setCells] = useState([]);
+            const [attacker, setAttacker] = useState(null);
+            const [defender, setDefender] = useState(null);
+            const [timer, setTimer] = useState({ attacker: 30, defender: 30 });
+            const [activeDuelist, setActiveDuelist] = useState(null);
+            const [highlightedIndex, setHighlightedIndex] = useState(null);
+            const [gridSize, setGridSize] = useState({ width: 0, height: 0 });
+            const gridRef = useRef(null);
+
+            const initFloor = () => {
+                const categories = ["LOGOS", "FRUITS", "CARS", "MOVIES", "HEROES", "LANDMARKS", "NATIONS", "TOONS", "ANIMALS", "HISTORY", "SCIENCE", "SPORTS", "TOOLS", "FASHION", "GAMING", "DESSERTS", "SPACE", "MUSIC", "BOOKS", "FLAGS"];
+                const newCells = categories.map((cat, i) => ({
+                    id: i,
+                    category: cat,
+                    owner: `PLAYER ${i + 1}`,
+                    color: `hsl(${(i * 360) / 20}, 70%, 45%)`,
+                }));
+                setCells(newCells);
+                setGameState('floor');
+            };
+
+            useLayoutEffect(() => {
+                if (gameState !== 'setup' && gridRef.current) {
+                    const update = () => setGridSize({ width: gridRef.current.clientWidth, height: gridRef.current.clientHeight });
+                    update();
+                    window.addEventListener('resize', update);
+                    return () => window.removeEventListener('resize', update);
+                }
+            }, [gameState]);
+
+            const pickRandomAttacker = () => {
+                setGameState('randomizing');
+                let count = 0;
+                const interval = setInterval(() => {
+                    setHighlightedIndex(Math.floor(Math.random() * cells.length));
+                    count++;
+                    if (count > 20) {
+                        clearInterval(interval);
+                        const finalIdx = Math.floor(Math.random() * cells.length);
+                        setHighlightedIndex(finalIdx);
+                        setTimeout(() => {
+                            setAttacker(cells[finalIdx]);
+                            setHighlightedIndex(null);
+                            setGameState('floor');
+                        }, 1000);
+                    }
+                }, 100);
+            };
+
+            const startDuel = (cell) => {
+                if (gameState !== 'floor' || !attacker) return;
+                if (cell.owner === attacker.owner) return;
+                setDefender(cell);
+                setTimer({ attacker: 30, defender: 30 });
+                setActiveDuelist('attacker');
+                setGameState('duel');
+            };
+
+            if (gameState === 'setup') {
+                return (
+                    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+                        <span className="text-blue-400 font-bold tracking-[0.2em] mb-2 uppercase text-sm">HKTAYY3 Presents:</span>
+                        <div className="text-8xl font-black text-blue-500 italic uppercase tracking-tighter mb-12">THE FLOOR</div>
+                        <button onClick={initFloor} className="bg-blue-600 hover:bg-blue-500 px-12 py-6 rounded-2xl font-black text-3xl text-white shadow-[0_8px_0_rgb(30,58,138)] active:translate-y-2 transition-all">START NEW GAME</button>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
+                    <header className="h-16 bg-slate-900 border-b border-white/5 flex justify-between items-center px-8 z-50">
+                        <div className="flex flex-col">
+                            <span className="text-blue-400 font-bold text-[10px] uppercase tracking-widest leading-none">HKTAYY3 Presents:</span>
+                            <span className="text-blue-500 font-black italic text-xl uppercase tracking-tighter">THE FLOOR</span>
+                        </div>
+                        {gameState === 'duel' && (
+                            <div className="flex gap-12 items-center font-black">
+                                <div className={`text-3xl ${activeDuelist === 'attacker' ? 'text-red-500 scale-110' : 'opacity-20'}`}>{timer.attacker}</div>
+                                <div className="text-slate-700 italic text-sm">VS</div>
+                                <div className={`text-3xl ${activeDuelist === 'defender' ? 'text-blue-500 scale-110' : 'opacity-20'}`}>{timer.defender}</div>
+                            </div>
+                        )}
+                        <button onClick={pickRandomAttacker} disabled={gameState !== 'floor' || !!attacker} className="bg-white text-black px-6 py-2 rounded-xl font-black text-sm hover:bg-blue-100 disabled:opacity-20 transition-all shadow-[0_4px_0_rgb(200,200,200)] active:translate-y-1">RANDOMIZER</button>
+                    </header>
+
+                    <main className="flex-1 relative bg-slate-950" ref={gridRef}>
+                        <div className="w-full h-full grid grid-cols-5 grid-rows-4 absolute inset-0">
+                            {cells.map((cell, idx) => {
+                                const isAttacker = attacker?.owner === cell.owner;
+                                const isHighlighted = highlightedIndex === idx;
+                                const isDimmed = (attacker && !isAttacker) || (gameState === 'randomizing' && !isHighlighted);
+                                
+                                return (
+                                    <div key={idx} onClick={() => startDuel(cell)}
+                                        className={`floor-cell relative border border-white/10 cursor-pointer overflow-hidden flex flex-col items-center justify-center
+                                        ${isDimmed ? 'opacity-20 grayscale scale-95 blur-[1px]' : 'opacity-100'}
+                                        ${isHighlighted ? 'z-50 scale-110 brightness-150 shadow-[0_0_50px_white]' : ''}`}
+                                        style={{ backgroundColor: isHighlighted ? 'white' : cell.color }}>
+                                        
+                                        {isAttacker && <div className="absolute inset-0 glow-pulse pointer-events-none" />}
+                                        
+                                        <div className="absolute top-2 bg-black/40 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter z-10">
+                                            {cell.owner}
+                                        </div>
+
+                                        <div className="w-full h-1/3 z-10">
+                                            {isAttacker ? (
+                                                <div className="flex justify-center text-amber-400 animate-bounce"><SwordIcon /></div>
+                                            ) : (
+                                                <AutoScaledText text={cell.category} containerWidth={gridSize.width/5} containerHeight={gridSize.height/4} />
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {gameState === 'duel' && (
+                            <div className="absolute inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-between p-8 animate-in fade-in duration-500">
+                                <div className="text-center">
+                                    <div className="text-blue-500 font-black text-xs uppercase tracking-widest mb-1">CATEGORY</div>
+                                    <div className="text-5xl font-black italic tracking-tighter uppercase">{defender?.category}</div>
+                                </div>
+
+                                <div className="w-full max-w-5xl flex-1 bg-black rounded-3xl border-4 border-slate-900 shadow-2xl flex items-center justify-center">
+                                    <div className="text-slate-800 flex flex-col items-center gap-4">
+                                        <TrophyIcon />
+                                        <span className="font-black text-xs tracking-widest">DECK PLACEHOLDER</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 w-full max-w-2xl">
+                                    <button onClick={() => setActiveDuelist(activeDuelist === 'attacker' ? 'defender' : 'attacker')} className="flex-1 bg-slate-800 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-[0_4px_0_rgb(30,30,30)] active:translate-y-1">Pass / Switch</button>
+                                    <button onClick={() => setGameState('floor')} className="flex-[1.5] bg-green-600 py-4 rounded-2xl font-black text-2xl italic tracking-tighter shadow-[0_4px_0_rgb(21,128,61)] active:translate-y-1">CORRECT</button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
