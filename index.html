@@ -5,60 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>THE FLOOR | HKTAYY3</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #020617; margin: 0; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #020617; margin: 0; overflow: hidden; color: white; }
         
-        /* The exact original hover and selection effects */
         .floor-tile { 
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             cursor: pointer;
-        }
-        .floor-tile:hover { 
-            filter: brightness(1.25); 
-            transform: scale(0.98); 
-            z-index: 10;
+            position: relative;
         }
         
-        @keyframes attacker-pulse {
-            0%, 100% { box-shadow: inset 0 0 30px rgba(251, 191, 36, 0.6), 0 0 20px rgba(251, 191, 36, 0.4); border: 4px solid #fbbf24; }
-            50% { box-shadow: inset 0 0 60px rgba(251, 191, 36, 0.9), 0 0 40px rgba(251, 191, 36, 0.6); border: 4px solid #fff; }
+        /* Original Hover Effect */
+        .floor-tile:hover:not(.dimmed) { 
+            filter: brightness(1.3); 
+            transform: scale(0.97); 
+            z-index: 20;
         }
+        
+        /* Selection Pulse */
+        @keyframes attacker-pulse {
+            0%, 100% { box-shadow: inset 0 0 30px rgba(251, 191, 36, 0.5); border: 4px solid #fbbf24; }
+            50% { box-shadow: inset 0 0 60px rgba(251, 191, 36, 0.9); border: 4px solid #fff; }
+        }
+        
         .active-attacker { 
             animation: attacker-pulse 1.5s infinite; 
             z-index: 50 !important; 
             transform: scale(1.05) !important;
         }
 
-        .dimmed { opacity: 0.15; filter: grayscale(0.8) blur(2px); pointer-events: none; }
-        .targetable { filter: brightness(1.1); box-shadow: 0 0 15px rgba(255,255,255,0.2); }
-        .targetable:hover { transform: scale(1.02); filter: brightness(1.4); }
+        .dimmed { opacity: 0.1; filter: grayscale(0.9) blur(2px); pointer-events: none; }
+        .targetable { filter: brightness(1.1); }
+        .targetable:hover { transform: scale(1.02); filter: brightness(1.5); box-shadow: 0 0 30px rgba(255,255,255,0.3); }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <script type="text/babel">
         const { useState, useEffect, useLayoutEffect, useMemo, useRef } = React;
 
-        const Sword = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline><line x1="13" y1="19" x2="19" y2="13"></line><line x1="16" y1="16" x2="20" y2="20"></line></svg>;
-
-        const GRID_COLS = 5;
-        const GRID_ROWS = 4;
+        const SwordIcon = () => (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline>
+                <line x1="13" y1="19" x2="19" y2="13"></line>
+                <line x1="16" y1="16" x2="20" y2="20"></line>
+            </svg>
+        );
 
         const AutoScaledText = ({ text, containerWidth, containerHeight }) => {
             const [fontSize, setFontSize] = useState(12);
             useLayoutEffect(() => {
                 if (!text || containerWidth <= 0) return;
-                const size = Math.min(containerWidth / (text.length * 0.5), containerHeight * 0.35, 32);
+                const size = Math.min(containerWidth / (text.length * 0.5), containerHeight * 0.3, 32);
                 setFontSize(size);
             }, [text, containerWidth, containerHeight]);
+
             return (
-                <div className="flex items-center justify-center text-center font-black uppercase tracking-tighter w-full h-full text-white select-none"
-                     style={{ fontSize: `${fontSize}px`, textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>
+                <div className="flex items-center justify-center text-center font-black uppercase tracking-tighter w-full h-full select-none"
+                     style={{ fontSize: `${fontSize}px`, textShadow: '0 4px 12px rgba(0,0,0,0.9)' }}>
                     {text}
                 </div>
             );
@@ -74,24 +83,33 @@
             const [gridSize, setGridSize] = useState({ width: 0, height: 0 });
             const gridRef = useRef(null);
 
+            const GRID_COLS = 5;
+            const GRID_ROWS = 4;
+
             const initFloor = () => {
                 const categories = ["LOGOS", "FRUITS", "CARS", "MOVIES", "HEROES", "LANDMARKS", "NATIONS", "TOONS", "ANIMALS", "HISTORY", "SCIENCE", "SPORTS", "TOOLS", "FASHION", "GAMING", "DESSERTS", "SPACE", "MUSIC", "BOOKS", "FLAGS"];
                 const newCells = categories.map((cat, i) => ({
                     id: i,
                     category: cat,
                     owner: `PLAYER ${i + 1}`,
-                    color: `hsl(${(i * 360) / 20}, 70%, 45%)`,
+                    color: `hsl(${(i * 360) / 20}, 75%, 45%)`,
                 }));
                 setCells(newCells);
                 setGameState('floor');
             };
 
-            useLayoutEffect(() => {
-                if (gridRef.current) {
-                    const update = () => setGridSize({ width: gridRef.current.clientWidth, height: gridRef.current.clientHeight });
-                    update(); window.addEventListener('resize', update);
-                    return () => window.removeEventListener('resize', update);
-                }
+            useEffect(() => {
+                const handleResize = () => {
+                    if (gridRef.current) {
+                        setGridSize({
+                            width: gridRef.current.offsetWidth,
+                            height: gridRef.current.offsetHeight
+                        });
+                    }
+                };
+                handleResize();
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
             }, [gameState]);
 
             const targetableIndices = useMemo(() => {
@@ -100,10 +118,11 @@
                 const targets = new Set();
                 attackerIndices.forEach(idx => {
                     const r = Math.floor(idx / GRID_COLS), c = idx % GRID_COLS;
-                    [{r:r-1,c}, {r:r+1,c}, {r,c:c-1}, {r,c:c+1}].forEach(p => {
+                    const neighbors = [{r:r-1,c}, {r:r+1,c}, {r,c:c-1}, {r,c:c+1}];
+                    neighbors.forEach(p => {
                         if (p.r >= 0 && p.r < GRID_ROWS && p.c >= 0 && p.c < GRID_COLS) {
-                            const targetIdx = p.r * GRID_COLS + p.c;
-                            if (cells[targetIdx].owner !== attacker.owner) targets.add(targetIdx);
+                            const tIdx = p.r * GRID_COLS + p.c;
+                            if (cells[tIdx].owner !== attacker.owner) targets.add(tIdx);
                         }
                     });
                 });
@@ -112,20 +131,8 @@
 
             const handleTileClick = (cell, idx) => {
                 if (gameState !== 'floor') return;
-                
-                // UNSELECT: If clicking the active attacker
-                if (attacker && cell.owner === attacker.owner) {
-                    setAttacker(null);
-                    return;
-                }
-
-                // SELECT: If no attacker is active
-                if (!attacker) {
-                    setAttacker(cell);
-                    return;
-                }
-
-                // DUEL: If clicking a targetable neighbor
+                if (attacker && cell.owner === attacker.owner) { setAttacker(null); return; }
+                if (!attacker) { setAttacker(cell); return; }
                 if (targetableIndices.includes(idx)) {
                     setDefender(cell);
                     setTimer({ attacker: 30, defender: 30 });
@@ -139,10 +146,7 @@
                 if (gameState === 'duel' && activeDuelist) {
                     interval = setInterval(() => {
                         setTimer(prev => {
-                            if (prev[activeDuelist] <= 0) {
-                                clearInterval(interval);
-                                return prev;
-                            }
+                            if (prev[activeDuelist] <= 0) { clearInterval(interval); return prev; }
                             return { ...prev, [activeDuelist]: prev[activeDuelist] - 1 };
                         });
                     }, 1000);
@@ -153,38 +157,36 @@
             if (gameState === 'setup') {
                 return (
                     <div className="h-screen bg-slate-950 flex flex-col items-center justify-center">
-                        <h1 className="text-9xl font-black italic text-blue-600 mb-12 tracking-tighter shadow-blue-900 drop-shadow-2xl">THE FLOOR</h1>
-                        <button onClick={initFloor} className="bg-blue-600 hover:bg-blue-500 text-white px-16 py-6 rounded-3xl font-black text-3xl shadow-[0_10px_0_rgb(30,58,138)] active:translate-y-2 transition-all">START COMPETITION</button>
+                        <h1 className="text-8xl md:text-9xl font-black italic text-blue-500 mb-12 tracking-tighter drop-shadow-[0_0_30px_rgba(59,130,246,0.5)]">THE FLOOR</h1>
+                        <button onClick={initFloor} className="bg-blue-600 hover:bg-blue-500 text-white px-16 py-6 rounded-3xl font-black text-3xl shadow-[0_10px_0_#1e3a8a] active:translate-y-2 transition-all">START GAME</button>
                     </div>
                 );
             }
 
             return (
                 <div className="h-screen bg-black flex flex-col">
-                    <header className="h-20 bg-slate-900 border-b border-white/10 flex justify-between items-center px-10 z-50 shadow-2xl">
+                    <header className="h-20 bg-slate-900 border-b border-white/10 flex justify-between items-center px-10 z-50">
                         <div className="font-black italic text-blue-500 text-3xl tracking-tighter">THE FLOOR</div>
                         
                         {gameState === 'duel' && (
-                            <div className="flex gap-20 items-center">
-                                <div className={`flex flex-col items-center transition-all duration-500 ${activeDuelist === 'attacker' ? 'scale-150' : 'opacity-20 blur-[1px]'}`}>
-                                    <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">{attacker.owner}</span>
-                                    <span className="text-5xl font-mono font-black text-white">{timer.attacker}</span>
+                            <div className="flex gap-16 items-center">
+                                <div className={`flex flex-col items-center transition-all duration-300 ${activeDuelist === 'attacker' ? 'scale-125 text-red-500' : 'opacity-20 text-white'}`}>
+                                    <span className="text-[10px] font-black uppercase">{attacker.owner}</span>
+                                    <span className="text-5xl font-mono font-black">{timer.attacker}</span>
                                 </div>
-                                <div className="text-slate-700 font-black italic text-2xl">VS</div>
-                                <div className={`flex flex-col items-center transition-all duration-500 ${activeDuelist === 'defender' ? 'scale-150' : 'opacity-20 blur-[1px]'}`}>
-                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{defender.owner}</span>
-                                    <span className="text-5xl font-mono font-black text-white">{timer.defender}</span>
+                                <div className="text-slate-700 font-black italic text-xl">VS</div>
+                                <div className={`flex flex-col items-center transition-all duration-300 ${activeDuelist === 'defender' ? 'scale-125 text-blue-500' : 'opacity-20 text-white'}`}>
+                                    <span className="text-[10px] font-black uppercase">{defender.owner}</span>
+                                    <span className="text-5xl font-mono font-black">{timer.defender}</span>
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex gap-4">
-                            <button onClick={() => setGameState('setup')} className="text-slate-500 hover:text-white font-black text-xs uppercase tracking-widest transition-colors">Reset Game</button>
-                        </div>
+                        <button onClick={() => setGameState('setup')} className="text-slate-500 hover:text-white font-black text-xs uppercase tracking-widest">Reset</button>
                     </header>
 
-                    <main className="flex-1 relative bg-slate-950" ref={gridRef}>
-                        <div className="w-full h-full grid grid-cols-5 grid-rows-4 absolute inset-0 p-1 gap-1">
+                    <main className="flex-1 relative bg-slate-950 p-2" ref={gridRef}>
+                        <div className="w-full h-full grid grid-cols-5 grid-rows-4 gap-2">
                             {cells.map((cell, idx) => {
                                 const isAttacker = attacker?.owner === cell.owner;
                                 const isTarget = targetableIndices.includes(idx);
@@ -192,19 +194,19 @@
 
                                 return (
                                     <div key={idx} onClick={() => handleTileClick(cell, idx)}
-                                         className={`floor-tile relative rounded-lg flex flex-col items-center justify-center overflow-hidden
-                                         ${isAttacker ? 'active-attacker' : 'border border-white/5 shadow-lg'}
+                                         className={`floor-tile rounded-xl border border-white/5 flex flex-col items-center justify-center
+                                         ${isAttacker ? 'active-attacker' : ''}
                                          ${isTarget ? 'targetable' : ''}
-                                         ${isDimmed ? 'dimmed' : 'opacity-100'}`}
+                                         ${isDimmed ? 'dimmed' : ''}`}
                                          style={{ backgroundColor: cell.color }}>
                                         
-                                        <div className="absolute top-2 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-tighter z-10 shadow-lg">
+                                        <div className="absolute top-2 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-tighter z-10">
                                             {cell.owner}
                                         </div>
 
-                                        <div className="w-full h-1/3 flex items-center justify-center z-10 p-4">
+                                        <div className="w-full h-1/2 flex items-center justify-center p-4">
                                             {isAttacker ? (
-                                                <div className="text-white animate-bounce drop-shadow-lg"><Sword/></div>
+                                                <div className="text-white animate-bounce"><SwordIcon/></div>
                                             ) : (
                                                 <AutoScaledText 
                                                     text={cell.category} 
@@ -219,22 +221,39 @@
                         </div>
 
                         {gameState === 'duel' && (
-                            <div className="absolute inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-between p-12 animate-in fade-in duration-500">
+                            <div className="absolute inset-0 z-[100] bg-slate-950/95 backdrop-blur-lg flex flex-col items-center justify-between p-12">
                                 <div className="text-center">
-                                    <div className="text-blue-500 font-black tracking-[0.3em] text-sm mb-2 uppercase">Competition Category</div>
-                                    <div className="text-8xl font-black italic text-white uppercase tracking-tighter drop-shadow-2xl">{defender?.category}</div>
+                                    <div className="text-blue-500 font-black tracking-widest text-sm mb-2 uppercase">Category</div>
+                                    <div className="text-7xl md:text-8xl font-black italic text-white uppercase tracking-tighter drop-shadow-2xl">{defender?.category}</div>
                                 </div>
 
-                                <div className="w-full max-w-5xl flex-1 my-10 bg-black rounded-[50px] border-8 border-slate-900 shadow-[0_0_100px_rgba(0,0,0,1)] flex items-center justify-center overflow-hidden">
-                                    <span className="text-slate-800 font-black text-3xl uppercase italic tracking-widest opacity-20">Competition Image Deck Loaded</span>
+                                <div className="w-full max-w-5xl flex-1 my-8 bg-black rounded-[50px] border-8 border-slate-900 shadow-2xl flex items-center justify-center">
+                                    <span className="text-slate-800 font-black text-3xl uppercase italic tracking-widest opacity-20">Competition Image Deck</span>
                                 </div>
 
-                                <div className="flex gap-10 w-full max-w-3xl">
+                                <div className="flex gap-8 w-full max-w-3xl">
                                     <button 
                                         onClick={() => setActiveDuelist(activeDuelist === 'attacker' ? 'defender' : 'attacker')} 
-                                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-6 rounded-3xl font-black uppercase text-sm tracking-widest border border-white/10 shadow-2xl transition-all active:scale-95"
+                                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-6 rounded-3xl font-black uppercase text-sm tracking-widest border border-white/10 transition-all active:scale-95"
                                     >
-                                        Pass / Switch Turn
+                                        Switch Turn
                                     </button>
                                     <button 
-                                        onClick={() => {
+                                        onClick={() => { setGameState('floor'); setAttacker(null); }} 
+                                        className="flex-[2] bg-green-600 hover:bg-green-500 text-white py-6 rounded-3xl font-black text-4xl italic tracking-tighter shadow-[0_10px_0_#15803d] transition-all active:translate-y-2"
+                                    >
+                                        CORRECT
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
