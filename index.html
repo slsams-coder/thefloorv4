@@ -177,6 +177,7 @@
       const [decks, setDecks] = useState({}); 
       const [currentImageIndex, setCurrentImageIndex] = useState(0);
       const [editingRegion, setEditingRegion] = useState(null); 
+      const [editForm, setEditForm] = useState({ owner: '', category: '' }); 
       const [conqueredIndices, setConqueredIndices] = useState([]);
       const [hoveredOwner, setHoveredOwner] = useState(null);
       const [playedPlayers, setPlayedPlayers] = useState(new Set());
@@ -250,7 +251,7 @@
         const losingOwnerId = isAttackerWinner ? defender.owner : attacker.owner;
         const winningColor = isAttackerWinner ? attacker.color : defender.color;
         
-        // UPDATED RULES FOR CATEGORY INHERITANCE:
+        // RULES FOR CATEGORY INHERITANCE:
         // This ensures the same category isn't played again by forcing the winner to take 
         // the category of the challenger (the "Attacker").
         // If Attacker wins: They take territory and keep their own category (effectively replacing the defender's category).
@@ -394,8 +395,37 @@
       };
 
       const updateRegionInfo = (oldOwner, newOwner, newCategory) => {
+        if (!editingRegion) return;
+        const oldCategory = editingRegion.category;
+
+        // Update cells to reflect the new owner name and category
         setCells(prev => prev.map(c => c.owner === oldOwner ? { ...c, owner: newOwner, category: newCategory } : c));
-        setEditingRegion(null);
+        
+        // CRITICAL FIX: Keep the attacker/defender state synchronized with the rename. 
+        // If the renamed player was selected, we MUST update their state pointer so the floor doesn't lose them and go dark.
+        setAttacker(prev => prev && prev.owner === oldOwner ? { ...prev, owner: newOwner, category: newCategory } : prev);
+        setDefender(prev => prev && prev.owner === oldOwner ? { ...prev, owner: newOwner, category: newCategory } : prev);
+        
+        // Prevent the player from being picked by randomizer again if their old name was already marked as played
+        setPlayedPlayers(prev => {
+          if (prev.has(oldOwner)) {
+            const next = new Set(prev);
+            next.delete(oldOwner);
+            next.add(newOwner);
+            return next;
+          }
+          return prev;
+        });
+
+        // Migrate image deck to the new category name
+        if (oldCategory && oldCategory !== newCategory) {
+          setDecks(prev => {
+            if (!prev[oldCategory]) return prev;
+            const next = { ...prev, [newCategory]: prev[oldCategory] };
+            delete next[oldCategory];
+            return next;
+          });
+        }
       };
 
       const regions = useMemo(() => {
@@ -581,7 +611,11 @@
                     style={{ left, top, width, height, clipPath: `path('${clipPathData}')`, WebkitClipPath: `path('${clipPathData}')` }}>
                    <div className="absolute flex flex-col items-center justify-center gap-1 transition-all duration-300" style={{ left: centerX, top: centerY, transform: 'translate(-50%, -50%)', width: cellW * 0.9, height: cellH * 0.9 }}>
                      {!isHidden && !isRandomizing && (
-                       <button onClick={(e) => { e.stopPropagation(); setEditingRegion(region); }} className={`absolute -top-4 -right-4 bg-black/40 hover:bg-white text-white hover:text-black p-2 rounded-lg pointer-events-auto transition-all z-50 backdrop-blur-sm border border-white/10 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                       <button onClick={(e) => { 
+                         e.stopPropagation(); 
+                         setEditingRegion(region); 
+                         setEditForm({ owner: region.owner, category: region.category });
+                       }} className={`absolute -top-4 -right-4 bg-black/40 hover:bg-white text-white hover:text-black p-2 rounded-lg pointer-events-auto transition-all z-50 backdrop-blur-sm border border-white/10 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
                          <Edit3 size={12} />
                        </button>
                       )}
@@ -613,7 +647,12 @@
                      <div className="flex flex-col items-center gap-4 text-slate-700">
                         <ImageIcon size={60} strokeWidth={1} />
                         <p className="font-black text-sm uppercase tracking-tighter">Deck Empty</p>
-                        <button onClick={() => { setGameState('floor'); setEditingRegion(regions.find(r => r.category === defender.category)); }} className="text-blue-500 underline text-xs font-bold">Add Images</button>
+                        <button onClick={() => { 
+                          setGameState('floor'); 
+                          const targetRegion = regions.find(r => r.category === defender.category);
+                          setEditingRegion(targetRegion); 
+                          setEditForm({ owner: targetRegion.owner, category: targetRegion.category });
+                        }} className="text-blue-500 underline text-xs font-bold">Add Images</button>
                      </div>
                    )}
                    <div className="absolute bottom-4 left-4 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
@@ -660,8 +699,8 @@
                           <label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Owner Name</label>
                           <input 
                             type="text" 
-                            defaultValue={editingRegion.owner}
-                            onBlur={(e) => updateRegionInfo(editingRegion.owner, e.target.value, editingRegion.category)}
+                            value={editForm.owner}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, owner: e.target.value }))}
                             className="w-full bg-black/50 border-2 border-white/10 rounded-xl px-4 py-3 font-black text-xl focus:border-blue-500 outline-none transition-all"
                           />
                         </div>
@@ -669,8 +708,8 @@
                           <label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Category Subject</label>
                           <input 
                             type="text" 
-                            defaultValue={editingRegion.category}
-                            onBlur={(e) => updateRegionInfo(editingRegion.owner, editingRegion.owner, e.target.value)}
+                            value={editForm.category}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
                             className="w-full bg-black/50 border-2 border-white/10 rounded-xl px-4 py-3 font-black text-xl focus:border-blue-500 outline-none transition-all"
                           />
                         </div>
@@ -718,7 +757,10 @@
                    </div>
                    
                    <div className="p-6 bg-slate-800/50 border-t border-white/5 flex justify-end">
-                      <button onClick={() => setEditingRegion(null)} className="bg-blue-600 hover:bg-blue-500 text-white px-10 py-3 rounded-xl font-black text-sm transition-all shadow-[0_4px_0_rgb(30,58,138)] active:translate-y-1">SAVE CHANGES</button>
+                      <button onClick={() => {
+                        updateRegionInfo(editingRegion.owner, editForm.owner, editForm.category);
+                        setEditingRegion(null);
+                      }} className="bg-blue-600 hover:bg-blue-500 text-white px-10 py-3 rounded-xl font-black text-sm transition-all shadow-[0_4px_0_rgb(30,58,138)] active:translate-y-1">SAVE CHANGES</button>
                    </div>
                  </div>
               </div>
