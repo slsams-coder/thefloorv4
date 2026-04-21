@@ -3,17 +3,27 @@ import { Trophy, Clock, User, Play, FastForward, Shield, Sword, Edit3, Check, Im
 
 const GRID_COLS = 5;
 const GRID_ROWS = 4;
-const INITIAL_TIMER = 30; 
+const INITIAL_TIMER = 30;
 
 const useAudio = () => {
   const audioCtx = useRef(null);
+
   const initAudio = () => {
-    if (!audioCtx.current) audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioCtx.current) {
+      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
   };
 
-  const playPassSound = () => {
+  const resumeAudio = async () => {
     initAudio();
-    if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
+    if (audioCtx.current.state === 'suspended') {
+      await audioCtx.current.resume();
+    }
+  };
+
+  const playPassSound = async () => {
+    initAudio();
+    await resumeAudio();
     const now = audioCtx.current.currentTime;
     const osc1 = audioCtx.current.createOscillator();
     const gain1 = audioCtx.current.createGain();
@@ -39,9 +49,9 @@ const useAudio = () => {
     osc2.stop(now + 0.4);
   };
 
-  const playTick = (freq = 440) => {
+  const playTick = async (freq = 440) => {
     initAudio();
-    if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
+    await resumeAudio();
     const osc = audioCtx.current.createOscillator();
     const gain = audioCtx.current.createGain();
     osc.type = 'sine';
@@ -54,11 +64,11 @@ const useAudio = () => {
     osc.stop(audioCtx.current.currentTime + 0.1);
   };
 
-  const playRoundEndMusic = (isWin = true) => {
+  const playRoundEndMusic = async (isWin = true) => {
     initAudio();
-    if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
+    await resumeAudio();
     const now = audioCtx.current.currentTime;
-    const melody = isWin ? [440, 554, 659, 880] : [220, 196, 174, 110]; 
+    const melody = isWin ? [440, 554, 659, 880] : [220, 196, 174, 110];
     melody.forEach((freq, i) => {
       const osc = audioCtx.current.createOscillator();
       const gain = audioCtx.current.createGain();
@@ -73,9 +83,9 @@ const useAudio = () => {
     });
   };
 
-  const playVictoryFanfare = () => {
+  const playVictoryFanfare = async () => {
     initAudio();
-    if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
+    await resumeAudio();
     const now = audioCtx.current.currentTime;
     const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
     notes.forEach((freq, i) => {
@@ -92,7 +102,7 @@ const useAudio = () => {
     });
   };
 
-  return { playPassSound, playRoundEndMusic, playTick, playVictoryFanfare };
+  return { resumeAudio, playPassSound, playRoundEndMusic, playTick, playVictoryFanfare };
 };
 
 const AutoScaledText = ({ text, containerWidth, containerHeight, color = "white", maxFontSize = 150 }) => {
@@ -133,7 +143,7 @@ const AutoScaledText = ({ text, containerWidth, containerHeight, color = "white"
   }, [text, containerWidth, containerHeight, maxFontSize]);
 
   return (
-    <div 
+    <div
       className="flex items-center justify-center text-center p-1 leading-[0.85] font-black uppercase tracking-tighter select-none pointer-events-none break-words overflow-hidden w-full h-full"
       style={{ fontSize: `${fontSize}px`, color, textShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
     >
@@ -148,20 +158,35 @@ export default function App() {
   const [attacker, setAttacker] = useState(null);
   const [defender, setDefender] = useState(null);
   const [timer, setTimer] = useState({ attacker: INITIAL_TIMER, defender: INITIAL_TIMER });
-  const [activeDuelist, setActiveDuelist] = useState(null); 
+  const [activeDuelist, setActiveDuelist] = useState(null);
   const [highlightedIndex, setHighlightedIndex] = useState(null);
   const [gridSize, setGridSize] = useState({ width: 0, height: 0 });
-  const [decks, setDecks] = useState({}); 
+  const [decks, setDecks] = useState({});
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [editingRegion, setEditingRegion] = useState(null); 
+  const [editingRegion, setEditingRegion] = useState(null);
   const [conqueredIndices, setConqueredIndices] = useState([]);
   const [hoveredOwner, setHoveredOwner] = useState(null);
   const [playedPlayers, setPlayedPlayers] = useState(new Set());
   const [isShowingAnswer, setIsShowingAnswer] = useState(false);
-  const [lastFeedbackType, setLastFeedbackType] = useState(null); 
-  
+  const [lastFeedbackType, setLastFeedbackType] = useState(null);
+
   const gridRef = useRef(null);
-  const { playPassSound, playRoundEndMusic, playTick, playVictoryFanfare } = useAudio();
+  const { resumeAudio, playPassSound, playRoundEndMusic, playTick, playVictoryFanfare } = useAudio();
+
+  // Load decks from localStorage on mount
+  useEffect(() => {
+    const savedDecks = localStorage.getItem('thefloor_decks');
+    if (savedDecks) {
+      setDecks(JSON.parse(savedDecks));
+    }
+  }, []);
+
+  // Save decks to localStorage whenever they change
+  useEffect(() => {
+    if (Object.keys(decks).length > 0) {
+      localStorage.setItem('thefloor_decks', JSON.stringify(decks));
+    }
+  }, [decks]);
 
   const initFloor = () => {
     const categories = ["LOGOS", "FRUITS", "CARS", "MOVIES", "HEROES", "LANDMARKS", "NATIONS", "TOONS", "ANIMALS", "HISTORY", "SCIENCE", "SPORTS", "TOOLS", "FASHION", "GAMING", "DESSERTS", "SPACE", "MUSIC", "BOOKS", "FLAGS"];
@@ -276,7 +301,8 @@ export default function App() {
     }
   };
 
-  const pickRandomAttacker = () => {
+  const pickRandomAttacker = async () => {
+    await resumeAudio(); // ensure audio is unlocked
     setGameState('randomizing');
     setAttacker(null);
     const uniqueOwners = Array.from(new Set(cells.map(c => c.owner)));
@@ -290,8 +316,8 @@ export default function App() {
     const run = () => {
       const idx = Math.floor(Math.random() * cells.length);
       setHighlightedIndex(idx);
-      playTick(200 + (elapsed / duration) * 400); 
-      elapsed += interval; 
+      playTick(200 + (elapsed / duration) * 400);
+      elapsed += interval;
       interval = Math.min(400, interval * 1.05);
       if (elapsed < duration) setTimeout(run, interval);
       else {
@@ -309,22 +335,22 @@ export default function App() {
     run();
   };
 
-  const handleNextImage = () => {
+  const handleNextImage = async () => {
     if (isShowingAnswer) return;
     setLastFeedbackType('correct');
     setIsShowingAnswer(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       const deck = decks[defender?.category] || [];
       setCurrentImageIndex(prev => (prev + 1) % (deck.length || 1));
       setActiveDuelist(activeDuelist === 'attacker' ? 'defender' : 'attacker');
-      playTick(600);
+      await playTick(600);
       setIsShowingAnswer(false);
     }, 1000);
   };
 
-  const handlePass = () => {
+  const handlePass = async () => {
     if (isShowingAnswer) return;
-    playPassSound();
+    await playPassSound();
     setLastFeedbackType('pass');
     setTimer(prev => {
       const newVal = Math.max(0, prev[activeDuelist] - 3);
@@ -354,7 +380,7 @@ export default function App() {
   };
 
   const removeDeckImage = (category, idx) => {
-    setDecks(prev => ({ prev, [category]: prev[category].filter((_, i) => i !== idx) }));
+    setDecks(prev => ({ ...prev, [category]: prev[category].filter((_, i) => i !== idx) }));
   };
 
   const renameDeckImage = (category, idx, newName) => {
@@ -405,10 +431,10 @@ export default function App() {
       interval = setInterval(() => {
         setTimer(prev => {
           const val = prev[activeDuelist] - 1;
-          if (val <= 5 && val > 0) playTick(880); 
-          if (val <= 0) { 
-            handleDuelEnd(activeDuelist === 'attacker' ? 'defender' : 'attacker'); 
-            return { ...prev, [activeDuelist]: 0 }; 
+          if (val <= 5 && val > 0) playTick(880);
+          if (val <= 0) {
+            handleDuelEnd(activeDuelist === 'attacker' ? 'defender' : 'attacker');
+            return { ...prev, [activeDuelist]: 0 };
           }
           return { ...prev, [activeDuelist]: val };
         });
@@ -424,7 +450,15 @@ export default function App() {
           <span className="text-blue-400 font-bold tracking-[0.2em] mb-2 uppercase text-sm">HKTAYY3 Presents:</span>
           <div className="text-8xl font-black text-blue-500 italic uppercase tracking-tighter drop-shadow-[0_15px_15px_rgba(0,0,0,0.5)] text-center">THE FLOOR</div>
         </div>
-        <button onClick={initFloor} className="bg-blue-600 hover:bg-blue-500 px-12 py-6 rounded-2xl font-black text-3xl shadow-[0_8px_0_rgb(30,58,138)] transition-all active:translate-y-2">START NEW GAME</button>
+        <button
+          onClick={async () => {
+            await resumeAudio();
+            initFloor();
+          }}
+          className="bg-blue-600 hover:bg-blue-500 px-12 py-6 rounded-2xl font-black text-3xl shadow-[0_8px_0_rgb(30,58,138)] transition-all active:translate-y-2"
+        >
+          START NEW GAME
+        </button>
       </div>
     );
   }
@@ -438,7 +472,7 @@ export default function App() {
             <span className="text-blue-500 font-black italic text-xl uppercase tracking-tighter leading-none">THE FLOOR</span>
           </div>
         </div>
-        
+
         {gameState === 'duel' && (
           <div className="flex gap-12 items-center">
              <div className={`flex flex-col items-center transition-all duration-300 ${activeDuelist === 'attacker' ? 'scale-110' : 'opacity-30'}`}>
