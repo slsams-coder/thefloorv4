@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE FLOOR | HKTAYY3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; margin: 0; overflow: hidden; }
+        .cell-transition { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes pulse-gold {
+            0%, 100% { box-shadow: inset 0 0 20px rgba(251, 191, 36, 0.4); border-color: #fbbf24; }
+            50% { box-shadow: inset 0 0 50px rgba(251, 191, 36, 0.8); border-color: #fff; }
+        }
+        .animate-attacker { animation: pulse-gold 1.5s infinite; z-index: 30; }
+        .conquered-anim { animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
+        @keyframes ping { 75%, 100% { transform: scale(1.2); opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useLayoutEffect, useMemo, useRef } = React;
+
+        // --- SVGs ---
+        const Sword = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"></polyline><line x1="13" y1="19" x2="19" y2="13"></line></svg>;
+        const Check = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+        const FastForward = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></svg>;
+
+        const GRID_COLS = 5;
+        const GRID_ROWS = 4;
+
+        const AutoScaledText = ({ text, containerWidth, containerHeight }) => {
+            const [fontSize, setFontSize] = useState(12);
+            useLayoutEffect(() => {
+                if (!text || containerWidth <= 0) return;
+                const size = Math.min(containerWidth / (text.length * 0.55), containerHeight * 0.35, 30);
+                setFontSize(size);
+            }, [text, containerWidth, containerHeight]);
+            return (
+                <div className="flex items-center justify-center text-center font-black uppercase tracking-tighter w-full h-full text-white"
+                     style={{ fontSize: `${fontSize}px`, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                    {text}
+                </div>
+            );
+        };
+
+        function App() {
+            const [gameState, setGameState] = useState('setup');
+            const [cells, setCells] = useState([]);
+            const [attacker, setAttacker] = useState(null);
+            const [defender, setDefender] = useState(null);
+            const [timer, setTimer] = useState({ attacker: 30, defender: 30 });
+            const [activeDuelist, setActiveDuelist] = useState(null);
+            const [highlightedIndex, setHighlightedIndex] = useState(null);
+            const [isShowingAnswer, setIsShowingAnswer] = useState(false);
+            const [conqueredIndices, setConqueredIndices] = useState([]);
+            const [gridSize, setGridSize] = useState({ width: 0, height: 0 });
+            const gridRef = useRef(null);
+
+            const initFloor = () => {
+                const categories = ["LOGOS", "FRUITS", "CARS", "MOVIES", "HEROES", "LANDMARKS", "NATIONS", "TOONS", "ANIMALS", "HISTORY", "SCIENCE", "SPORTS", "TOOLS", "FASHION", "GAMING", "DESSERTS", "SPACE", "MUSIC", "BOOKS", "FLAGS"];
+                const newCells = categories.map((cat, i) => ({
+                    id: i,
+                    category: cat,
+                    owner: `PLAYER ${i + 1}`,
+                    color: `hsl(${(i * 360) / 20}, 70%, 45%)`,
+                }));
+                setCells(newCells);
+                setGameState('floor');
+            };
+
+            useLayoutEffect(() => {
+                if (gridRef.current) {
+                    const update = () => setGridSize({ width: gridRef.current.clientWidth, height: gridRef.current.clientHeight });
+                    update();
+                    window.addEventListener('resize', update);
+                    return () => window.removeEventListener('resize', update);
+                }
+            }, [gameState]);
+
+            // Region Mapping (Calculates targetable neighbors)
+            const targetableOwners = useMemo(() => {
+                if (!attacker) return [];
+                const attackerIndices = cells.map((c, i) => c.owner === attacker.owner ? i : null).filter(i => i !== null);
+                const neighbors = new Set();
+                attackerIndices.forEach(idx => {
+                    const r = Math.floor(idx / GRID_COLS), c = idx % GRID_COLS;
+                    [{r:r-1,c}, {r:r+1,c}, {r,c:c-1}, {r,c:c+1}].forEach(p => {
+                        if (p.r >= 0 && p.r < GRID_ROWS && p.c >= 0 && p.c < GRID_COLS) {
+                            const owner = cells[p.r * GRID_COLS + p.c].owner;
+                            if (owner !== attacker.owner) neighbors.add(owner);
+                        }
+                    });
+                });
+                return Array.from(neighbors);
+            }, [attacker, cells]);
+
+            useEffect(() => {
+                let interval;
+                if (gameState === 'duel' && activeDuelist && !isShowingAnswer) {
+                    interval = setInterval(() => {
+                        setTimer(prev => {
+                            if (prev[activeDuelist] <= 0) {
+                                handleDuelEnd(activeDuelist === 'attacker' ? 'defender' : 'attacker');
+                                return prev;
+                            }
+                            return { ...prev, [activeDuelist]: prev[activeDuelist] - 1 };
+                        });
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [gameState, activeDuelist, isShowingAnswer]);
+
+            const handleDuelEnd = (winnerRole) => {
+                const winner = winnerRole === 'attacker' ? attacker : defender;
+                const loserOwner = winnerRole === 'attacker' ? defender.owner : attacker.owner;
+                
+                const affected = [];
+                const newCells = cells.map((c, i) => {
+                    if (c.owner === loserOwner) {
+                        affected.push(i);
+                        return { ...c, owner: winner.owner, color: winner.color, category: attacker.category };
+                    }
+                    return c;
+                });
+
+                setConqueredIndices(affected);
+                setCells(newCells);
+                setGameState('floor');
+                setAttacker({ ...winner, category: attacker.category });
+                setDefender(null);
+                setTimeout(() => setConqueredIndices([]), 2000);
+            };
+
+            const handlePass = () => {
+                if (isShowingAnswer) return;
+                setTimer(prev => ({ ...prev, [activeDuelist]: Math.max(0, prev[activeDuelist] - 3) }));
+                setIsShowingAnswer(true);
+                setTimeout(() => setIsShowingAnswer(false), 1000);
+            };
+
+            const handleCorrect = () => {
+                if (isShowingAnswer) return;
+                setIsShowingAnswer(true);
+                setTimeout(() => {
+                    setIsShowingAnswer(false);
+                    setActiveDuelist(activeDuelist === 'attacker' ? 'defender' : 'attacker');
+                }, 800);
+            };
+
+            if (gameState === 'setup') {
+                return (
+                    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center">
+                        <h1 className="text-8xl font-black italic text-blue-500 mb-8">THE FLOOR</h1>
+                        <button onClick={initFloor} className="bg-blue-600 px-12 py-5 rounded-2xl font-black text-2xl shadow-[0_8px_0_#1e3a8a] active:translate-y-1 transition-all">START TOURNAMENT</button>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="h-screen bg-black flex flex-col">
+                    <header className="h-16 bg-slate-900 border-b border-white/5 flex justify-between items-center px-8 z-50">
+                        <span className="font-black italic text-blue-500 text-xl tracking-tighter">THE FLOOR</span>
+                        {gameState === 'duel' && (
+                            <div className="flex gap-12 items-center">
+                                <div className={`text-center transition-all ${activeDuelist === 'attacker' ? 'scale-125' : 'opacity-20'}`}>
+                                    <div className="text-[10px] font-black text-red-500 uppercase">{attacker?.owner}</div>
+                                    <div className="text-3xl font-mono font-black">{timer.attacker}</div>
+                                </div>
+                                <div className={`text-center transition-all ${activeDuelist === 'defender' ? 'scale-125' : 'opacity-20'}`}>
+                                    <div className="text-[10px] font-black text-blue-500 uppercase">{defender?.owner}</div>
+                                    <div className="text-3xl font-mono font-black">{timer.defender}</div>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex gap-4">
+                            {!attacker && <button onClick={() => {
+                                setGameState('randomizing');
+                                let i = 0;
+                                const inv = setInterval(() => {
+                                    setHighlightedIndex(Math.floor(Math.random()*20));
+                                    if(i++ > 20) {
+                                        clearInterval(inv);
+                                        const final = Math.floor(Math.random()*20);
+                                        setHighlightedIndex(final);
+                                        setTimeout(() => { setAttacker(cells[final]); setHighlightedIndex(null); setGameState('floor'); }, 800);
+                                    }
+                                }, 80);
+                            }} className="bg-white text-black px-4 py-1.5 rounded-lg font-black text-xs shadow-[0_3px_0_#ccc]">RANDOMIZER</button>}
+                            <button onClick={() => setGameState('setup')} className="text-slate-500 text-[10px] uppercase font-bold">Reset</button>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 relative bg-slate-950" ref={gridRef}>
+                        <div className="w-full h-full grid grid-cols-5 grid-rows-4 absolute inset-0">
+                            {cells.map((cell, idx) => {
+                                const isAttacker = attacker?.owner === cell.owner;
+                                const isTargetable = attacker && targetableOwners.includes(cell.owner);
+                                const isHighlighted = highlightedIndex === idx;
+                                const isConquered = conqueredIndices.includes(idx);
+                                const isDimmed = attacker && !isAttacker && !isTargetable && !isConquered;
+
+                                return (
+                                    <div key={idx} onClick={() => isTargetable && (setDefender(cell), setTimer({attacker:30, defender:30}), setActiveDuelist('attacker'), setGameState('duel'))}
+                                         className={`cell-transition relative border border-white/5 flex flex-col items-center justify-center cursor-pointer overflow-hidden
+                                         ${isAttacker ? 'animate-attacker' : ''}
+                                         ${isDimmed ? 'opacity-10 grayscale scale-95 blur-[2px]' : 'opacity-100'}
+                                         ${isHighlighted ? 'bg-white z-50 scale-110 shadow-[0_0_60px_white]' : ''}
+                                         ${isConquered ? 'z-40' : ''}`}
+                                         style={{ backgroundColor: isHighlighted ? 'white' : cell.color }}>
+                                        {isConquered && <div className="absolute inset-0 bg-white conquered-anim z-0" />}
+                                        <div className="absolute top-2 bg-black/40 px-2 py-0.5 rounded text-[8px] font-black z-10">{cell.owner}</div>
+                                        <div className="w-full h-1/3 z-10">
+                                            {isAttacker ? <div className="flex justify-center text-amber-400 animate-bounce"><Sword/></div> : 
+                                            <AutoScaledText text={cell.category} containerWidth={gridSize.width/5} containerHeight={gridSize.height/4} />}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {gameState === 'duel' && (
+                            <div className="absolute inset-0 z-[100] bg-slate-950/98 backdrop-blur-xl flex flex-col items-center justify-between p-12">
+                                <div className="text-center">
+                                    <div className="text-blue-500 font-black text-xs tracking-widest mb-2">CATEGORY</div>
+                                    <div className="text-6xl font-black italic text-white tracking-tighter">{defender?.category}</div>
+                                </div>
+
+                                <div className="w-full max-w-4xl flex-1 my-8 bg-black rounded-[40px] border-4 border-slate-800 shadow-2xl flex flex-col items-center justify-center text-slate-700 relative overflow-hidden">
+                                    <div className="flex flex-col items-center opacity-20">
+                                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                        <p className="mt-4 font-black uppercase text-xs">Waiting for Deck Upload</p>
+                                    </div>
+
+                                    {isShowingAnswer && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-24 bg-green-600 flex items-center justify-center animate-in slide-in-from-bottom duration-300">
+                                            <span className="text-4xl font-black italic uppercase tracking-tighter text-white">CORRECT ANSWER REVEALED</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex gap-6 w-full max-w-2xl">
+                                    <button onClick={handlePass} className="flex-1 bg-slate-800 py-5 rounded-2xl font-black text-xs uppercase tracking-widest border border-white/10 flex items-center justify-center gap-2">
+                                        <FastForward/> PASS (-3S)
+                                    </button>
+                                    <button onClick={handleCorrect} className="flex-[2] bg-green-600 py-5 rounded-2xl font-black text-2xl italic tracking-tighter shadow-[0_6px_0_#15803d] flex items-center justify-center gap-3">
+                                        <Check/> CORRECT
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
