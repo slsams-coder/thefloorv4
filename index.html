@@ -35,6 +35,43 @@
     import { createRoot } from 'react-dom/client';
     import { Trophy, Clock, User, Play, FastForward, Shield, Sword, Edit3, Check, Image as ImageIcon, X, Plus, Trash2, Dices, Save, UploadCloud, PartyPopper, RefreshCcw, Settings, Ban, Cloud, CloudOff, ChevronRight, ChevronLeft } from 'lucide-react';
 
+    // ---------------------------------------------------------
+    // MASTER ANSWER ARRAYS (METHOD 1)
+    // Replace these placeholder items with your actual 40 answers!
+    // The first item maps to 1.jpg, the second to 2.jpg, etc.
+    // ---------------------------------------------------------
+    const masterAnswers = {
+      "CLOTHING BRAND LOGOS": ["Nike", "Adidas", "Lacoste", "Ralph Lauren", "Chanel", "Puma", "Gucci", "Louis Vuitton", "Supreme", "Hermès", "Burberry", "Versace", "Under Armour", "Emporio Armani", "Tommy Hilfiger", "Prada", "Fendi", "Levi's", "Swarovski", "Patagonia"], 
+      "JOBS": ["Doctor", "Firefighter", "Pilot", "Chef", "Teacher", "Police Officer", "Nurse", "Engineer", "Lawyer", "Artist", "Architect", "Scientist", "Musician", "Farmer", "Construction Worker", "Software Developer", "Astronaut", "Journalist", "Veterinarian", "Electrician"],
+      "POLITICIANS": ["Abraham Lincoln", "Winston Churchill", "Mahatma Gandhi", "Nelson Mandela", "John F. Kennedy", "Margaret Thatcher", "Barack Obama", "Angela Merkel", "Narendra Modi", "Vladimir Putin", "Donald Trump", "Joe Biden", "Xi Jinping", "Emmanuel Macron", "Kim Jong Un", "Boris Johnson", "Justin Trudeau", "Jacinda Ardern", "Lula da Silva", "Benjamin Netanyahu"],
+      "MOVIES": ["The Lion King (1994)", "Titanic (1997)", "Jurassic Park (1993)", "The Matrix (1999)", "Star Wars (1977)", "Jaws (1975)", "Home Alone (1990)", "The Wizard of Oz (1939)", "Indiana Jones (1981)", "Forrest Gump (1994)", "The Godfather (1972)", "E.T. the Extra-Terrestrial (1982)", "Schindler's List (1993)", "Gladiator (2000)", "The Shining (1980)", "Pulp Fiction (1994)", "Avatar (2009)", "Inception (2010)", "The Dark Knight (2008)", "Frozen (2013)"],
+      "INSECTS": ["Moth", "Ladybug", "Butterfly", "Bee", "Ant", "Grasshopper", "Dragonfly", "Cricket", "Firefly", "Mosquito", "Beetle", "Caterpillar", "Fly", "Spider", "Mantis", "Wasp", "Cockroach", "Termite", "Centipede", "Tick"],
+      "FRUITS": ["Apple", "Banana", "Strawberry", "Orange", "Grapes", "Pineapple", "Watermelon", "Mango", "Kiwi", "Cherry", "Blueberry", "Peach", "Pear", "Lemon", "Pomegranate", "Dragon Fruit", "Avocado", "Papaya", "Coconut", "Raspberry"],
+      "CARTOON CHARACTERS": ["Mickey Mouse", "Bugs Bunny", "SpongeBob SquarePants", "Homer Simpson", "Tom and Jerry", "Scooby-Doo", "Pikachu", "Winnie the Pooh", "Spider-Man", "Batman", "Superman", "Wonder Woman", "Shrek", "Elsa", "Buzz Lightyear", "Woody", "Minion", "Garfield", "Snoopy", "Pink Panther"],
+      "COUNTRY FLAGS": ["USA", "UK", "France", "Germany", "Japan", "Canada", "Brazil", "Italy", "Australia", "India", "China", "Russia", "South Africa", "Mexico", "South Korea", "Spain", "Argentina", "Turkey", "Nigeria", "Egypt"],
+      "SPORTS": ["Football (Soccer)", "Basketball", "Tennis", "Baseball", "Cricket", "Golf", "Swimming", "Athletics (Sprinting)", "Boxing", "Formula 1", "Rugby", "Volleyball", "Ice Hockey", "Cycling", "Gymnastics", "Surfing", "Skiing", "Skateboarding", "Archery", "Fencing"],
+      "POPULAR APPS": ["TikTok", "Instagram", "YouTube", "WhatsApp", "Twitter (X)", "Spotify", "Google", "LinkedIn", "Google Maps", "Amazon", "Gmail", "Dropbox", "Netflix", "Zoom", "Evernote", "Facebook", "Pinterest", "Airbnb", "Mastercard", "Telegram"],
+      "ONLINE GAMES": ["Minecraft", "League of Legends", "Fortnite", "Roblox", "Valorant", "Counter-Strike", "Among Us", "World of Warcraft", "Genshin Impact", "Overwatch", "Apex Legends", "Dota 2", "Call of Duty: Warzone", "PUBG", "Rocket League", "Final Fantasy XIV", "Destiny 2", "Dead by Daylight", "Sea of Thieves", "Hearthstone"],
+      "FAST FOOD CHAINS": ["McDonald's", "KFC", "Starbucks", "Subway", "Burger King", "Pizza Hut", "Domino's", "Taco Bell", "Wendy's", "Dunkin'", "Dairy Queen", "Papa John's", "Sonic", "Arby's", "Jack in the Box", "Chipotle", "Panda Express", "Panera Bread", "Five Guys", "Chick-fil-A"],
+      "MAKEUP": ["Lipstick", "Eyeshadow Palette", "Foundation", "Mascara", "Blush", "Eyeliner", "Concealer", "Highlighter", "Setting Spray", "Makeup Brushes", "Nail Polish", "Lip Gloss", "Eyebrow Pencil", "Face Primer", "Beauty Blender", "Face Powder", "Makeup Remover", "Lip Liner", "Eyelash Curler", "Makeup Bag"],
+      "POKEMON": ["Pikachu", "Charizard", "Bulbasaur", "Squirtle", "Gengar", "Mewtwo", "Eevee", "Snorlax", "Jigglypuff", "Meowth", "Lapras", "Dragonite", "Umbreon", "Lugia", "Togepi", "Arcanine", "Alakazam", "Gyarados", "Lucario", "Garchomp"],
+      "MTR STATIONS": ["Central", "Admiralty", "Tsim Sha Tsui", "Mong Kok", "Causeway Bay", "Choi Hung", "Diamond Hill", "Wong Tai Sin", "Tai Koo", "North Point", "Wan Chai", "Sunny Bay", "Disneyland Resort", "Tung Chung", "Ocean Park", "Ngong Ping (Cable Car)", "Exhibition Centre", "HKU", "Kennedy Town", "West Kowloon (HSR)"],
+      "ANIMALS": ["Lion", "Elephant", "Tiger", "Giraffe", "Zebra", "Giant Panda", "Kangaroo", "Polar Bear", "Wolf", "Gorilla", "Bald Eagle", "Dolphin", "Emperor Penguin", "Camel", "Red Panda", "Sloth", "Red Fox", "Koala", "Great Horned Owl", "Sea Turtle"],
+      "FAMOUS ATHLETES": ["Lionel Messi", "Cristiano Ronaldo", "Neymar Jr.", "Kylian Mbappé", "Mohamed Salah", "LeBron James", "Stephen Curry", "Roger Federer", "Rafael Nadal", "Serena Williams", "Conor McGregor", "Mike Tyson", "Tiger Woods", "Usain Bolt", "Muhammad Ali", "Michael Phelps", "Simone Biles", "Lewis Hamilton", "Shohei Ohtani", "Novak Djokovic"],
+      "HONG KONG CELEBRITIES": ["Bruce Lee", "Jacky Chan", "Chow Yun Fat", "Tony Leung Chiu Wai", "Maggie Cheung", "Leslie Cheung", "Anita Mui", "Andy Lau", "Stephen Chow", "Donnie Yen", "Nicholas Tse", "Louis Koo"],
+      "POPULAR ANIME": ["One Piece", "Naruto", "Dragon Ball", "Attack on Titan", "Demon Slayer", "My Hero Academia", "Jujutsu Kaisen", "Death Note", "Fullmetal Alchemist", "Hunter x Hunter", "Sword Art Online", "Tokyo Ghoul", "Bleach", "Fairy Tail", "Black Clover", "Spirited Away", "Your Name", "Cowboy Bebop", "Evangelion", "Sailor Moon"],
+      "FAST FOOD": ["Tacos", "Hamburger", "French Fries", "Pizza", "Hot Dog", "Chicken Nuggets", "Fried Chicken", "Nachos", "Onion Rings", "Burrito", "Fish and chips", "Donut", "Cheese sticks", "Ice cream", "Chicken Wings", "Hashbrowns", "Sandwiches", "Apple pie", "Milkshake", "Churros"]
+    };
+
+    // Auto-generate the starting decks using the master array and local file paths (Option 2)
+    const initialDecks = {};
+    Object.keys(masterAnswers).forEach(category => {
+      initialDecks[category] = masterAnswers[category].map((answer, index) => ({
+        name: answer,
+        url: `./images/${category}/${index + 1}.jpg`
+      }));
+    });
+
     const GRID_COLS = 5;
     const GRID_ROWS = 4;
     const INITIAL_TIMER = 30; 
@@ -49,17 +86,134 @@
         initAudio();
         if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
         const now = audioCtx.current.currentTime;
+        
+        // Reality Show Buzzer Sound ("ERNNNT")
         const osc1 = audioCtx.current.createOscillator();
-        const gain1 = audioCtx.current.createGain();
+        const osc2 = audioCtx.current.createOscillator();
+        const osc3 = audioCtx.current.createOscillator();
+        const gain = audioCtx.current.createGain();
+        
         osc1.type = 'sawtooth';
-        osc1.frequency.setValueAtTime(150, now);
-        osc1.frequency.exponentialRampToValueAtTime(40, now + 0.4);
-        gain1.gain.setValueAtTime(0.3, now);
-        gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.current.destination);
+        osc2.type = 'square';
+        osc3.type = 'square';
+        
+        // Detuned, low-pitch cluster for an aggressive buzz
+        osc1.frequency.setValueAtTime(130, now); 
+        osc2.frequency.setValueAtTime(135, now); 
+        osc3.frequency.setValueAtTime(125, now); 
+        
+        // Sharp attack, brief sustain, quick fade
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+        gain.gain.setValueAtTime(0.2, now + 0.35); 
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        
+        osc1.connect(gain);
+        osc2.connect(gain);
+        osc3.connect(gain);
+        gain.connect(audioCtx.current.destination);
+        
         osc1.start(now);
-        osc1.stop(now + 0.4);
+        osc2.start(now);
+        osc3.start(now);
+        osc1.stop(now + 0.5);
+        osc2.stop(now + 0.5);
+        osc3.stop(now + 0.5);
+      };
+
+      const playCorrectSound = () => {
+        initAudio();
+        if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
+        const now = audioCtx.current.currentTime;
+        
+        const playNote = (freq, startTime, duration) => {
+          const osc = audioCtx.current.createOscillator();
+          const gain = audioCtx.current.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(0.15, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.current.destination);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        };
+
+        // Satisfying ascending "Ding-Ding!"
+        playNote(880, now, 0.1); // A5 (Shortened duration)
+        playNote(1108.73, now + 0.08, 0.4); // C#6 (Reduced delay for faster snap)
+      };
+
+      const playAlarm = (timeLeft) => {
+        initAudio();
+        if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
+        const now = audioCtx.current.currentTime;
+
+        if (timeLeft <= 9 && timeLeft > 0) {
+          // Dramatic ticking alarm (Game show/time bomb style)
+          const makeTick = (time, isPrimary) => {
+            const tOsc = audioCtx.current.createOscillator();
+            const tGain = audioCtx.current.createGain();
+            
+            // Triangle wave for a sharp, piercing digital "beep/tick"
+            tOsc.type = 'triangle'; 
+            
+            // Pitch escalates as time runs out
+            const step = 9 - timeLeft; 
+            const freq = 800 + (step * 100); 
+            
+            // Alternate pitch slightly to create a "tick-tock" rhythm
+            tOsc.frequency.setValueAtTime(isPrimary ? freq : freq - 300, time);
+            
+            // Sharp percussive attack, quick decay
+            tGain.gain.setValueAtTime(0, time);
+            tGain.gain.linearRampToValueAtTime(isPrimary ? 0.25 : 0.08, time + 0.01);
+            tGain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+            
+            tOsc.connect(tGain);
+            tGain.connect(audioCtx.current.destination);
+            tOsc.start(time);
+            tOsc.stop(time + 0.15);
+          };
+
+          // 4 distinct, urgent ticks per second
+          makeTick(now, true);
+          makeTick(now + 0.25, false);
+          makeTick(now + 0.5, true);
+          makeTick(now + 0.75, false);
+        }
+      };
+
+      const playLoseSound = () => {
+        initAudio();
+        if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
+        const now = audioCtx.current.currentTime;
+        
+        // Long, harsh, descending "Game Over" synth buzzer
+        const osc1 = audioCtx.current.createOscillator();
+        const osc2 = audioCtx.current.createOscillator();
+        const gain = audioCtx.current.createGain();
+        
+        osc1.type = 'sawtooth';
+        osc2.type = 'square';
+        
+        osc1.frequency.setValueAtTime(200, now);
+        osc1.frequency.linearRampToValueAtTime(50, now + 2);
+        
+        osc2.frequency.setValueAtTime(205, now);
+        osc2.frequency.linearRampToValueAtTime(55, now + 2);
+        
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 2);
+        
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.current.destination);
+        
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 2);
+        osc2.stop(now + 2);
       };
 
       const playTick = (freq = 440) => {
@@ -115,7 +269,7 @@
         });
       };
 
-      return { playPassSound, playRoundEndMusic, playTick, playVictoryFanfare };
+      return { playPassSound, playCorrectSound, playRoundEndMusic, playTick, playVictoryFanfare, playAlarm, playLoseSound };
     };
 
     const AutoScaledText = ({ text, containerWidth, containerHeight, color = "white", maxFontSize = 150 }) => {
@@ -174,7 +328,7 @@
       const [activeDuelist, setActiveDuelist] = useState(null); 
       const [highlightedIndex, setHighlightedIndex] = useState(null);
       const [gridSize, setGridSize] = useState({ width: 0, height: 0 });
-      const [decks, setDecks] = useState({}); 
+      const [decks, setDecks] = useState(initialDecks); 
       const [currentImageIndex, setCurrentImageIndex] = useState(0);
       const [editingRegion, setEditingRegion] = useState(null); 
       const [editForm, setEditForm] = useState({ owner: '', category: '' }); 
@@ -183,20 +337,63 @@
       const [playedPlayers, setPlayedPlayers] = useState(new Set());
       const [isShowingAnswer, setIsShowingAnswer] = useState(false);
       const [lastFeedbackType, setLastFeedbackType] = useState(null); 
+      const [isPreDuel, setIsPreDuel] = useState(false);
       
+      // New State variables for Streaks and Power Ups
+      const [winStreaks, setWinStreaks] = useState({});
+      const [powerUps, setPowerUps] = useState({});
+
       const gridRef = useRef(null);
-      const { playPassSound, playRoundEndMusic, playTick, playVictoryFanfare } = useAudio();
+      const { playPassSound, playCorrectSound, playRoundEndMusic, playTick, playVictoryFanfare, playAlarm, playLoseSound } = useAudio();
+
+      // Ref to safely check the latest timer state inside timeouts
+      const timerRef = useRef(timer);
+      useEffect(() => {
+        timerRef.current = timer;
+      }, [timer]);
 
       const initFloor = () => {
-        const categories = ["LOGOS", "FRUITS", "CARS", "MOVIES", "HEROES", "LANDMARKS", "NATIONS", "TOONS", "ANIMALS", "HISTORY", "SCIENCE", "SPORTS", "TOOLS", "FASHION", "GAMING", "DESSERTS", "SPACE", "MUSIC", "BOOKS", "FLAGS"];
-        const newCells = categories.map((cat, i) => ({
+        // ---------------------------------------------------------
+        // STARTING PLAYERS & CATEGORIES
+        // Replace "John", "Sarah", etc. with your real contestants!
+        // Make sure the category names exactly match those in masterAnswers.
+        // ---------------------------------------------------------
+        const startingPlayers = [
+          { name: "Ann", category: "CLOTHING BRAND LOGOS" },
+          { name: "Osika", category: "JOBS" },
+          { name: "Wing", category: "POLITICIANS" },
+          { name: "Hamna", category: "MOVIES" },
+          { name: "Sarah", category: "INSECTS" },
+          { name: "Jolie", category: "FRUITS" },
+          { name: "Keisha", category: "CARTOON CHARACTERS" },
+          { name: "Kavaughn", category: "COUNTRY FLAGS" },
+          { name: "Kinoux", category: "SPORTS" },
+          { name: "Zoe", category: "POPULAR APPS" },
+          { name: "Hailey", category: "ONLINE GAMES" },
+          { name: "Mariam", category: "FAST FOOD CHAINS" },
+          { name: "Ella", category: "MAKEUP" },
+          { name: "Yoco", category: "POKEMON" },
+          { name: "KARSON", category: "MTR STATIONS" },
+          { name: "Withney", category: "ANIMALS" },
+          { name: "Aqdas", category: "FAMOUS ATHLETES" },
+          { name: "Kinson", category: "HONG KONG CELEBRITIES" },
+          { name: "Max", category: "POPULAR ANIME" },
+          { name: "Sartaj", category: "FAST FOOD" }
+        ];
+
+        const newCells = startingPlayers.map((player, i) => ({
           id: i,
-          category: cat,
-          owner: `PLAYER ${i + 1}`,
+          category: player.category,
+          originalCategory: player.category,
+          owner: player.name,
+          originalOwner: player.name,
           color: `hsl(${(i * 360) / 20}, 70%, 45%)`,
         }));
+        
         setCells(newCells);
         setPlayedPlayers(new Set());
+        setWinStreaks({});
+        setPowerUps({});
         setGameState('floor');
       };
 
@@ -251,11 +448,6 @@
         const losingOwnerId = isAttackerWinner ? defender.owner : attacker.owner;
         const winningColor = isAttackerWinner ? attacker.color : defender.color;
         
-        // RULES FOR CATEGORY INHERITANCE:
-        // This ensures the same category isn't played again by forcing the winner to take 
-        // the category of the challenger (the "Attacker").
-        // If Attacker wins: They take territory and keep their own category (effectively replacing the defender's category).
-        // If Defender wins: They take territory and adopt the attacker's category (replacing their own played category).
         const finalCategory = attacker.category;
 
         setPlayedPlayers(prev => {
@@ -263,6 +455,19 @@
           next.add(attacker.owner);
           next.add(defender.owner);
           return next;
+        });
+
+        // Update streaks and powerups
+        setWinStreaks(prev => {
+          const currentStreak = prev[winningOwnerId] || 0;
+          const newStreak = currentStreak + 1;
+          
+          // Award a +5s powerup every 3 consecutive wins
+          if (newStreak % 3 === 0) {
+            setPowerUps(pu => ({ ...pu, [winningOwnerId]: (pu[winningOwnerId] || 0) + 1 }));
+          }
+          
+          return { ...prev, [winningOwnerId]: newStreak, [losingOwnerId]: 0 };
         });
 
         const changedIndices = [];
@@ -281,6 +486,8 @@
         setActiveDuelist(null);
         setAttacker({ owner: winningOwnerId, category: finalCategory, color: winningColor });
         setDefender(null);
+        setIsPreDuel(false);
+        setIsShowingAnswer(false);
         checkVictory(newCells);
         setTimeout(() => setConqueredIndices([]), 2000);
       };
@@ -290,6 +497,8 @@
         setActiveDuelist(null);
         setAttacker(null);
         setDefender(null);
+        setIsPreDuel(false);
+        setIsShowingAnswer(false);
       };
 
       const startDuel = (owner, category, color) => {
@@ -302,6 +511,7 @@
           setTimer({ attacker: INITIAL_TIMER, defender: INITIAL_TIMER });
           setActiveDuelist('attacker');
           setCurrentImageIndex(0);
+          setIsPreDuel(true);
           setGameState('duel');
         }
       };
@@ -341,14 +551,18 @@
 
       const handleNextImage = () => {
         if (isShowingAnswer) return;
+        playCorrectSound();
         setLastFeedbackType('correct');
         setIsShowingAnswer(true);
         setTimeout(() => {
           const deck = decks[defender?.category] || [];
           if (deck.length > 0) setCurrentImageIndex(prev => (prev + 1) % deck.length);
-          setActiveDuelist(activeDuelist === 'attacker' ? 'defender' : 'attacker');
-          playTick(600);
-          setIsShowingAnswer(false);
+          
+          // Only pass the turn if the player's clock didn't hit 0 during this delay!
+          if (timerRef.current[activeDuelist] > 0) {
+            setActiveDuelist(activeDuelist === 'attacker' ? 'defender' : 'attacker');
+            setIsShowingAnswer(false);
+          }
         }, 1000);
       };
 
@@ -356,16 +570,33 @@
         if (isShowingAnswer) return;
         playPassSound();
         setLastFeedbackType('pass');
+        
+        const remaining = timer[activeDuelist] - 3;
+        
         setTimer(prev => {
-          const newVal = Math.max(0, prev[activeDuelist] - 3);
-          return { ...prev, [activeDuelist]: newVal };
+          return { ...prev, [activeDuelist]: Math.max(0, remaining) };
         });
         setIsShowingAnswer(true);
+        
         setTimeout(() => {
           const deck = decks[defender?.category] || [];
           if (deck.length > 1) setCurrentImageIndex(prev => (prev + 1) % deck.length);
-          setIsShowingAnswer(false);
+          
+          // Only clear the overlay if they survived the time penalty
+          if (timerRef.current[activeDuelist] > 0) {
+            setIsShowingAnswer(false);
+          }
         }, 1000);
+      };
+
+      const usePowerUp = (role) => {
+        if (!isPreDuel) return;
+        const ownerId = role === 'attacker' ? attacker?.owner : defender?.owner;
+        if (powerUps[ownerId] > 0) {
+          setPowerUps(prev => ({ ...prev, [ownerId]: prev[ownerId] - 1 }));
+          setTimer(prev => ({ ...prev, [role]: prev[role] + 5 }));
+          playTick(880);
+        }
       };
 
       const addDeckImages = async (category, files) => {
@@ -398,15 +629,24 @@
         if (!editingRegion) return;
         const oldCategory = editingRegion.category;
 
-        // Update cells to reflect the new owner name and category
-        setCells(prev => prev.map(c => c.owner === oldOwner ? { ...c, owner: newOwner, category: newCategory } : c));
+        setCells(prev => prev.map(c => {
+          if (c.owner === oldOwner) {
+            const updated = { ...c, owner: newOwner, category: newCategory };
+            if (c.originalOwner === oldOwner) {
+              updated.originalOwner = newOwner;
+              // If they were still on their original category, update the new ground truth original
+              if (c.category === c.originalCategory) {
+                updated.originalCategory = newCategory;
+              }
+            }
+            return updated;
+          }
+          return c;
+        }));
         
-        // CRITICAL FIX: Keep the attacker/defender state synchronized with the rename. 
-        // If the renamed player was selected, we MUST update their state pointer so the floor doesn't lose them and go dark.
         setAttacker(prev => prev && prev.owner === oldOwner ? { ...prev, owner: newOwner, category: newCategory } : prev);
         setDefender(prev => prev && prev.owner === oldOwner ? { ...prev, owner: newOwner, category: newCategory } : prev);
         
-        // Prevent the player from being picked by randomizer again if their old name was already marked as played
         setPlayedPlayers(prev => {
           if (prev.has(oldOwner)) {
             const next = new Set(prev);
@@ -417,7 +657,24 @@
           return prev;
         });
 
-        // Migrate image deck to the new category name
+        // Migrate win streaks and power ups safely
+        setWinStreaks(prev => {
+          if (prev[oldOwner] !== undefined) {
+            const next = { ...prev, [newOwner]: prev[oldOwner] };
+            delete next[oldOwner];
+            return next;
+          }
+          return prev;
+        });
+        setPowerUps(prev => {
+          if (prev[oldOwner] !== undefined) {
+            const next = { ...prev, [newOwner]: prev[oldOwner] };
+            delete next[oldOwner];
+            return next;
+          }
+          return prev;
+        });
+
         if (oldCategory && oldCategory !== newCategory) {
           setDecks(prev => {
             if (!prev[oldCategory]) return prev;
@@ -458,6 +715,15 @@
             if (dist < minDist) { minDist = dist; bestIdx = idx; }
           });
           current.centerIdx = bestIdx;
+          
+          // Determine if this region is playing an inherited category
+          const homeCellIdx = current.indices.find(i => cells[i].originalOwner === current.owner);
+          if (homeCellIdx !== undefined) {
+            current.isInherited = current.category !== cells[homeCellIdx].originalCategory;
+          } else {
+            current.isInherited = false;
+          }
+
           regionsList.push(current);
         });
         return regionsList;
@@ -465,21 +731,35 @@
 
       useEffect(() => {
         let interval;
-        if (gameState === 'duel' && activeDuelist && !isShowingAnswer) {
+        if (gameState === 'duel' && activeDuelist && !isPreDuel) {
           interval = setInterval(() => {
             setTimer(prev => {
               const val = prev[activeDuelist] - 1;
-              if (val <= 5 && val > 0) playTick(880); 
+              if (val > 0) playAlarm(val); 
               if (val <= 0) { 
-                handleDuelEnd(activeDuelist === 'attacker' ? 'defender' : 'attacker'); 
-                return { ...prev, [activeDuelist]: 0 }; 
+                clearInterval(interval); 
               }
-              return { ...prev, [activeDuelist]: val };
+              return { ...prev, [activeDuelist]: Math.max(0, val) };
             });
           }, 1000);
         }
         return () => clearInterval(interval);
-      }, [gameState, activeDuelist, isShowingAnswer]);
+      }, [gameState, activeDuelist, isPreDuel]);
+
+      useEffect(() => {
+        if (gameState === 'duel') {
+          if (timer.attacker === 0 && activeDuelist === 'attacker') {
+            playLoseSound();
+            const t = setTimeout(() => handleDuelEnd('defender'), 2000);
+            return () => clearTimeout(t);
+          }
+          if (timer.defender === 0 && activeDuelist === 'defender') {
+            playLoseSound();
+            const t = setTimeout(() => handleDuelEnd('attacker'), 2000);
+            return () => clearTimeout(t);
+          }
+        }
+      }, [timer.attacker, timer.defender, gameState, activeDuelist]);
 
       if (gameState === 'setup') {
         return (
@@ -495,7 +775,7 @@
 
       return (
         <div className="h-screen bg-black text-white flex flex-col font-sans select-none overflow-hidden">
-          <header className="h-16 bg-slate-900 border-b border-white/5 flex justify-between items-center px-8 z-[60] relative">
+          <header className="py-4 min-h-[6rem] h-auto bg-slate-900 border-b border-white/5 flex justify-between items-center px-8 z-[60] relative">
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
                 <span className="text-blue-400 font-bold text-[10px] uppercase tracking-widest leading-none mb-1">HKTAYY3 Presents:</span>
@@ -505,18 +785,36 @@
             
             {gameState === 'duel' && (
               <div className="flex gap-12 items-center">
-                 <div className={`flex flex-col items-center transition-all duration-300 ${activeDuelist === 'attacker' ? 'scale-110' : 'opacity-30'}`}>
-                  <span className={`text-[10px] font-black uppercase transition-colors ${timer.attacker <= 5 ? 'text-red-500 animate-pulse' : 'text-red-400'}`}>{attacker?.owner}</span>
-                   <div className={`text-3xl font-mono font-black tabular-nums tracking-tighter transition-colors ${timer.attacker <= 5 ? 'text-red-500' : 'text-white'}`}>
+                 <div className={`flex flex-col items-center transition-all duration-300 ${activeDuelist === 'attacker' || isPreDuel ? 'scale-110' : 'opacity-30'}`}>
+                  <span className={`text-[10px] font-black uppercase transition-colors ${timer.attacker <= 9 ? 'text-red-500 animate-pulse' : 'text-red-400'}`}>{attacker?.owner}</span>
+                   <div className={`text-3xl font-mono font-black tabular-nums tracking-tighter transition-colors ${timer.attacker <= 9 ? 'text-red-500' : 'text-white'}`}>
                    {timer.attacker}
                   </div>
+                  {powerUps[attacker?.owner] > 0 && (
+                    <button 
+                      onClick={() => usePowerUp('attacker')}
+                      disabled={!isPreDuel}
+                      className={`mt-1 flex items-center gap-1 bg-amber-400 text-black px-2 py-0.5 rounded-full text-[10px] font-black transition-transform ${isPreDuel ? 'hover:scale-110' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    >
+                      <Clock size={10} strokeWidth={3} /> +5s ({powerUps[attacker?.owner]})
+                    </button>
+                  )}
                 </div>
                  <div className="text-lg italic font-black text-slate-700">VS</div>
-                 <div className={`flex flex-col items-center transition-all duration-300 ${activeDuelist === 'defender' ? 'scale-110' : 'opacity-30'}`}>
-                  <span className={`text-[10px] font-black uppercase transition-colors ${timer.defender <= 5 ? 'text-red-500 animate-pulse' : 'text-blue-400'}`}>{defender?.owner}</span>
-                   <div className={`text-3xl font-mono font-black tabular-nums tracking-tighter transition-colors ${timer.defender <= 5 ? 'text-red-500' : 'text-white'}`}>
+                 <div className={`flex flex-col items-center transition-all duration-300 ${activeDuelist === 'defender' || isPreDuel ? 'scale-110' : 'opacity-30'}`}>
+                  <span className={`text-[10px] font-black uppercase transition-colors ${timer.defender <= 9 ? 'text-red-500 animate-pulse' : 'text-blue-400'}`}>{defender?.owner}</span>
+                   <div className={`text-3xl font-mono font-black tabular-nums tracking-tighter transition-colors ${timer.defender <= 9 ? 'text-red-500' : 'text-white'}`}>
                    {timer.defender}
                   </div>
+                  {powerUps[defender?.owner] > 0 && (
+                    <button 
+                      onClick={() => usePowerUp('defender')}
+                      disabled={!isPreDuel}
+                      className={`mt-1 flex items-center gap-1 bg-blue-400 text-black px-2 py-0.5 rounded-full text-[10px] font-black transition-transform ${isPreDuel ? 'hover:scale-110' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                    >
+                      <Clock size={10} strokeWidth={3} /> +5s ({powerUps[defender?.owner]})
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -624,7 +922,7 @@
                        {region.owner}
                      </div>
                       <div className={`w-full h-[40%] flex items-center justify-center transition-transform duration-200 ${isTargetRegion && isHovered ? 'scale-110' : ''}`}>
-                       {!isAttackerRegion ? <AutoScaledText text={region.category} containerWidth={cellW * 0.8} containerHeight={cellH * 0.3} maxFontSize={24} /> : <div className="flex flex-col items-center justify-center text-amber-400 animate-bounce"><Sword size={16} strokeWidth={3} /></div>}
+                       {!isAttackerRegion ? <AutoScaledText text={region.category} containerWidth={cellW * 0.8} containerHeight={cellH * 0.3} maxFontSize={24} color={region.isInherited ? "#fde047" : "white"} /> : <div className="flex flex-col items-center justify-center text-amber-400 animate-bounce"><Sword size={16} strokeWidth={3} /></div>}
                      </div>
                      {isTargetRegion && <div className={`absolute -bottom-6 transition-opacity flex flex-col items-center ${isHovered ? 'opacity-100' : 'opacity-0'}`}><Sword size={16} className="text-red-500 animate-bounce" /></div>}
                    </div>
@@ -641,18 +939,27 @@
                </div>
                 <div className="flex-1 w-full max-w-5xl flex flex-col gap-4 min-h-0 items-center justify-center relative">
                   <div className="w-full h-full bg-black rounded-3xl border-4 border-slate-900 shadow-2xl relative overflow-hidden flex items-center justify-center">
+                   {isPreDuel && (
+                     <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+                       <h2 className="text-5xl font-black italic uppercase tracking-tighter text-white">Pre-Duel Phase</h2>
+                       <p className="text-slate-400 font-bold uppercase tracking-widest text-sm text-center leading-relaxed">
+                         Players may use +5s power-ups now.<br/>They <span className="text-red-400">cannot</span> be used during the match!
+                       </p>
+                       <button 
+                         onClick={() => setIsPreDuel(false)}
+                         className="mt-4 bg-white text-black px-10 py-4 rounded-2xl font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_6px_0_rgb(200,200,200)] flex items-center gap-3"
+                       >
+                         <Play size={28} /> BEGIN DUEL
+                       </button>
+                     </div>
+                   )}
                    {decks[defender?.category]?.[currentImageIndex] ? (
                      <img key={currentImageIndex} src={decks[defender?.category][currentImageIndex].url} className="w-full h-full object-contain animate-in fade-in zoom-in duration-300" alt="Quiz" />
                    ) : (
                      <div className="flex flex-col items-center gap-4 text-slate-700">
                         <ImageIcon size={60} strokeWidth={1} />
                         <p className="font-black text-sm uppercase tracking-tighter">Deck Empty</p>
-                        <button onClick={() => { 
-                          setGameState('floor'); 
-                          const targetRegion = regions.find(r => r.category === defender.category);
-                          setEditingRegion(targetRegion); 
-                          setEditForm({ owner: targetRegion.owner, category: targetRegion.category });
-                        }} className="text-blue-500 underline text-xs font-bold">Add Images</button>
+                        <p className="text-[10px] text-slate-500">Ensure local files exist at ./images/{defender?.category}/...</p>
                      </div>
                    )}
                    <div className="absolute bottom-4 left-4 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
@@ -673,8 +980,8 @@
                  </div>
                </div>
                 <div className="flex gap-4 mt-4 w-full max-w-2xl pb-4">
-                 <button disabled={isShowingAnswer} onClick={handlePass} className="flex-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-2xl font-black text-sm flex items-center justify-center gap-2 active:scale-95 transition-all py-3 shadow-[0_4px_0_rgb(30,30,30)]"><FastForward size={18} /> PASS (-3s)</button>
-                 <button disabled={isShowingAnswer} onClick={handleNextImage} className="flex-[1.5] bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-2xl font-black text-2xl italic tracking-tighter transition-all py-3 flex items-center justify-center gap-3 shadow-[0_4px_0_rgb(21,128,61)]"><Check size={28} strokeWidth={4} /> CORRECT</button>
+                 <button disabled={isShowingAnswer || isPreDuel || timer.attacker === 0 || timer.defender === 0} onClick={handlePass} className="flex-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-2xl font-black text-sm flex items-center justify-center gap-2 active:scale-95 transition-all py-3 shadow-[0_4px_0_rgb(30,30,30)]"><FastForward size={18} /> PASS (-3s)</button>
+                 <button disabled={isShowingAnswer || isPreDuel || timer.attacker === 0 || timer.defender === 0} onClick={handleNextImage} className="flex-[1.5] bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-2xl font-black text-2xl italic tracking-tighter transition-all py-3 flex items-center justify-center gap-3 shadow-[0_4px_0_rgb(21,128,61)]"><Check size={28} strokeWidth={4} /> CORRECT</button>
                </div>
               </div>
             )}
@@ -699,8 +1006,8 @@
                           <label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Owner Name</label>
                           <input 
                             type="text" 
-                            value={editForm.owner}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, owner: e.target.value }))}
+                            defaultValue={editingRegion.owner}
+                            onBlur={(e) => updateRegionInfo(editingRegion.owner, e.target.value, editingRegion.category)}
                             className="w-full bg-black/50 border-2 border-white/10 rounded-xl px-4 py-3 font-black text-xl focus:border-blue-500 outline-none transition-all"
                           />
                         </div>
@@ -708,8 +1015,8 @@
                           <label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Category Subject</label>
                           <input 
                             type="text" 
-                            value={editForm.category}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
+                            defaultValue={editingRegion.category}
+                            onBlur={(e) => updateRegionInfo(editingRegion.owner, editingRegion.owner, e.target.value)}
                             className="w-full bg-black/50 border-2 border-white/10 rounded-xl px-4 py-3 font-black text-xl focus:border-blue-500 outline-none transition-all"
                           />
                         </div>
@@ -724,7 +1031,7 @@
                         <div className="flex justify-between items-center">
                           <label className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Deck Images ({decks[editingRegion.category]?.length || 0})</label>
                           <label className="bg-white text-black px-4 py-1.5 rounded-lg font-black text-xs cursor-pointer hover:bg-blue-500 hover:text-white transition-all flex items-center gap-2">
-                            <UploadCloud size={14} /> UPLOAD IMAGES
+                            <UploadCloud size={14} /> UPLOAD OVERRIDE
                             <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => addDeckImages(editingRegion.category, e.target.files)} />
                           </label>
                         </div>
@@ -733,9 +1040,11 @@
                           {decks[editingRegion.category]?.length > 0 ? (
                             <div className="grid grid-cols-2 gap-4">
                               {decks[editingRegion.category].map((img, idx) => (
-                                <div key={idx} className="group relative aspect-square bg-slate-800 rounded-xl overflow-hidden border border-white/5">
-                                  <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                                  <div className="absolute inset-0 flex flex-col justify-end p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div key={idx} className="group relative aspect-square bg-slate-800 rounded-xl overflow-hidden border border-white/5 flex items-center justify-center text-center">
+                                  {/* Fallback text if local image doesn't exist yet */}
+                                  <span className="text-[10px] text-slate-500 absolute z-0 px-2">Missing<br/>{img.url}</span>
+                                  <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity relative z-10" />
+                                  <div className="absolute inset-0 flex flex-col justify-end p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20">
                                     <input 
                                       className="bg-black/50 text-[10px] font-black uppercase w-full p-1 rounded outline-none border border-white/20 mb-1"
                                       value={img.name}
@@ -757,10 +1066,7 @@
                    </div>
                    
                    <div className="p-6 bg-slate-800/50 border-t border-white/5 flex justify-end">
-                      <button onClick={() => {
-                        updateRegionInfo(editingRegion.owner, editForm.owner, editForm.category);
-                        setEditingRegion(null);
-                      }} className="bg-blue-600 hover:bg-blue-500 text-white px-10 py-3 rounded-xl font-black text-sm transition-all shadow-[0_4px_0_rgb(30,58,138)] active:translate-y-1">SAVE CHANGES</button>
+                      <button onClick={() => setEditingRegion(null)} className="bg-blue-600 hover:bg-blue-500 text-white px-10 py-3 rounded-xl font-black text-sm transition-all shadow-[0_4px_0_rgb(30,58,138)] active:translate-y-1">SAVE CHANGES</button>
                    </div>
                  </div>
               </div>
